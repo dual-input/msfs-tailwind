@@ -1,5 +1,5 @@
 // What npm's `prepare` runs when it installs this package from GitHub: src/ compiled into
-// dist/, with each `.ts` import rewritten to `.js` and the types beside it.
+// dist/, with each `.ts` import in the JavaScript rewritten to `.js`, and the types beside it.
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {

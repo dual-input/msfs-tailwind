@@ -2,8 +2,8 @@
 // The engine drops CSS it can't read without an error, and Tailwind 3 writes some of it:
 // utilities for properties the engine lacks, and colors in a form it doesn't read. So the
 // preset turns off the core plugins whose every utility the engine drops, and `plugins()`
-// runs Tailwind, then autoprefixer, then a step that writes every color in a form the engine
-// keeps (Dual Input, record/areas/interface/decisions.md, "Tailwind 3 reaches the kit through
+// runs Tailwind with autoprefixer and a step that writes its colors in a form the engine keeps
+// (Dual Input, record/areas/interface/decisions.md, "Tailwind 3 reaches the kit through
 // msfs-tailwind, a preset of our own for Coherent GT").
 
 import autoprefixer from "autoprefixer"
@@ -61,11 +61,18 @@ export default preset
 /**
  * The browsers autoprefixer writes for. Coherent GT's user agent names Chrome 49, and its
  * makers last placed it near Safari 10.1, so autoprefixer adds the `-webkit-` forms the engine
- * keeps where it drops the plain one, such as `-webkit-user-select`.
+ * keeps where it drops the plain one, such as `-webkit-user-select` (Dual Input,
+ * record/areas/architecture/log.md, "2026-10-09: Coherent GT's makers last placed its engine
+ * near Safari 10.1, the MSFS Avionics Framework and FlyByWire compile to ES2017, nobody
+ * maintains a rule set for the engine, and Working Title ships its own pinned copy of the
+ * framework").
  */
 export const BROWSERS = ["chrome 49", "safari 10"]
 
-/** The PostCSS plugins that build a stylesheet for Coherent GT from a Tailwind config: Tailwind, autoprefixer, then `output()`. */
+/**
+ * The PostCSS plugins that build a stylesheet for Coherent GT from a Tailwind config: Tailwind,
+ * autoprefixer, and `output()`, which rewrites each declaration before autoprefixer copies it.
+ */
 export function plugins(config: Config): AcceptedPlugin[] {
   return [tailwindcss(config), autoprefixer({ overrideBrowserslist: BROWSERS }), output()]
 }

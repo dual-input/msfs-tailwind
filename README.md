@@ -8,7 +8,7 @@ We built it for Dual Input, a shared cockpit for MSFS 2024, and publish it as it
 ## Install
 
 ```bash
-npm install --save-dev github:dual-input/msfs-tailwind postcss
+npm install --save-dev github:dual-input/msfs-tailwind github:dual-input/coherent-checks postcss
 ```
 
 npm's lockfile pins the commit it installed, and `npm update msfs-tailwind` takes the newest on `main`.
@@ -36,6 +36,10 @@ const { css } = await postcss(plugins(config)).process(input, { from: undefined 
 - **`output()`** writes every `rgb()` and `hsl()` with commas, so `bg-sky-300/80` comes out as `rgba(125, 211, 252, 0.8)`, and so do Tailwind's ring and shadow defaults, its gradients' transparent stops, and your arbitrary values.
   It also takes out the rule of `--tw-` defaults Tailwind writes for `::backdrop`, a selector the engine drops whole.
 - **`colorVar(name)`** is a theme color held as an RGB triplet in a custom property, `--primary: 116, 212, 255`, which Tailwind's opacity modifiers then write as `rgba(var(--primary), 0.8)`.
+  Write the triplet with commas: `116 212 255` draws nothing there, and neither the check nor `output()` can see what a custom property will hold.
+
+List msfs-tailwind first in `presets`, or in your own preset's `presets`.
+Tailwind puts its whole default theme right behind a preset that names no presets of its own, so with `presets: [brand, msfsTailwind]`, Tailwind's `colors` take the place of `brand`'s.
 
 With preflight off, `@tailwind base` writes only Tailwind's `--tw-` defaults, so bring a reset of your own.
 In the EFB, scope it to your app's root, since a reset on the whole document would restyle the EFB around your app.
@@ -61,13 +65,14 @@ npx coherent-check dist/app.css
 
 ## Where the measurements come from
 
-Dual Input's probe p14 tried every CSS property, keyword, function, unit, selector, and at-rule MDN's mdn-data 2.37.2 lists, in MSFS 2024, Steam build 26058316, at the main menu on 2026-10-25, and coherent-checks passes only what it saw the engine keep.
+coherent-checks passes only what Dual Input's probe p14 saw the engine keep, as [its README](https://github.com/dual-input/coherent-checks#where-the-measurements-come-from) says.
 Dual Input's probe p17 graded Tailwind 3's whole output against p14, and msfs-tailwind's tests rebuild it on the preset: every utility Tailwind 3 makes, each of its variants, and each plugin the preset turns off, graded by coherent-checks.
 A test fails when what the check fails of that output changes, or when a plugin the preset turns off makes anything the engine keeps.
 
 ## Known gaps
 
-- Tailwind 3 sets `--tw-ring-inset`, the filter defaults such as `--tw-blur`, and the gradient positions to an empty value, and rings, filters, and gradients rest on them; no probe has tried an empty custom property in Coherent GT.
+- Tailwind 3 sets some of its custom properties to an empty value, and no probe has tried an empty custom property in Coherent GT.
+  Rings rest on them through `--tw-ring-inset`, filters through `--tw-blur` and the rest, gradients through their positions, `tabular-nums` and the other `font-variant-numeric` utilities through `--tw-numeric-spacing` and its kind, and `touch-pan-*` and `touch-pinch-zoom` through `--tw-pan-x` and its kind.
 - A keyword Tailwind puts in a custom property escapes the check, as `touch-pan-x` writes `--tw-pan-x: pan-x`, a keyword the engine drops where `touch-action` reads it.
 - The check reads what the engine keeps and lays out, not what it paints, which only a screenshot in the sim shows.
 

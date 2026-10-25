@@ -1,7 +1,7 @@
 // Dual Input's probe p17, rebuilt on the preset: Tailwind 3's every utility and each of its
 // variants, graded by the Coherent GT check, which passes only what Dual Input's probe p14
 // measured the engine keeping (read in Dual Input, experiments/areas/interface/p17-tailwind3).
-// p17's third run, over shadcn's components, isn't here, since they're Tailwind 4's.
+// p17's first run, over shadcn's components, isn't here, since they're Tailwind 4's.
 
 import assert from "node:assert/strict"
 import { test } from "node:test"
@@ -88,7 +88,12 @@ const DROPPED_VARIANTS = new Set(["focus-visible", "file", "marker", "has-[:chec
 test("the check passes every variant p17 kept, and fails focus-visible, has-, dark, and the rest it dropped", async () => {
   const wrong: string[] = []
   for (const variant of VARIANTS) {
-    const failed = reasons(await build({ content: `${variant}:underline` }, "@tailwind utilities;")).length > 0
+    const css = await build({ content: `${variant}:underline` }, "@tailwind utilities;")
+    if (!css.includes("text-decoration-line: underline")) {
+      wrong.push(`${variant}: Tailwind built nothing for it`)
+      continue
+    }
+    const failed = reasons(css).length > 0
     if (failed !== DROPPED_VARIANTS.has(variant)) wrong.push(`${variant}: the check ${failed ? "failed" : "passed"} it`)
   }
   assert.deepEqual(wrong, [])
@@ -99,8 +104,11 @@ test("each plugin the preset turns off makes only what Coherent GT drops", async
   const feeders = new Set([".snap-mandatory", ".snap-proximity"])
   const kept: string[] = []
   for (const name of DROPPED_PLUGINS) {
-    const css = await build({ presets: [], corePlugins: [name], safelist: [{ pattern: /.*/ }], content: "" }, "@tailwind utilities;")
-    postcss.parse(css).each((node) => {
+    // A list of core plugins replaces the preset's, and the theme stays Tailwind's whole default.
+    const css = await build({ corePlugins: [name], safelist: [{ pattern: /.*/ }], content: "" }, "@tailwind utilities;")
+    const root = postcss.parse(css)
+    if (!root.nodes.length) kept.push(`${name}: made no CSS, so says nothing`)
+    root.each((node) => {
       if (node.type === "rule" && feeders.has(node.selector)) return
       if (!checkCss(node.toString()).length) kept.push(`${name}: ${node.toString().replace(/\s+/g, " ")}`)
     })
@@ -123,6 +131,9 @@ test("the output step writes rgb() and hsl() with commas, and takes out only Tai
   assert.equal(withCommas("rgb(0 0 0 / var(--tw-bg-opacity, 1))"), "rgba(0, 0, 0, var(--tw-bg-opacity, 1))")
   assert.equal(withCommas("hsl(120 50% 50%)"), "hsl(120, 50%, 50%)")
   assert.equal(withCommas("rgba(1, 2, 3, 0.5)"), "rgba(1, 2, 3, 0.5)")
+  // A var() that may hold three channels in spaces stays, and so does `none`, which commas don't take.
+  assert.equal(withCommas("rgb(var(--primary) / 0.5)"), "rgb(var(--primary) / 0.5)")
+  assert.equal(withCommas("rgb(none 0 0)"), "rgb(none 0 0)")
   const css = await build({ content: "underline" }, `${ALL}\n.dialog::backdrop { background: black }`)
   assert.ok(!/(^|\n)::backdrop/.test(css), "Tailwind's ::backdrop defaults are still there")
   assert.deepEqual(reasons(css), ["::backdrop is dropped by Coherent GT, which drops the whole rule"])

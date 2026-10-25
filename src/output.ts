@@ -1,12 +1,13 @@
-// The step after Tailwind and autoprefixer, which fixes what Tailwind 3 writes and Coherent GT
-// can't read. Tailwind writes each color as `rgb()` with spaces and a slash, such as
-// `rgb(59 130 246 / 0.5)`, for its palette, its ring and shadow defaults, and its gradients'
-// transparent stops, and the engine drops that form while it keeps `rgba()` with commas, so
-// this writes every `rgb()` and `hsl()` with commas. Tailwind also writes a rule of `--tw-`
-// defaults for `::backdrop`, a selector the engine drops whole, which this takes out (Dual
-// Input, record/areas/architecture/log.md, "2026-10-25: Coherent GT keeps 304 of the 554 CSS
-// properties Chromium 152 keeps, and lays out flexbox and grid as Chromium does but for `gap`,
-// `justify-content: end`, and subgrid").
+// The step that fixes what Tailwind 3 writes and Coherent GT can't read. Tailwind writes each
+// color as `rgb()` with spaces and a slash, such as `rgb(59 130 246 / 0.5)`, for its palette,
+// its ring and shadow defaults, and its gradients' transparent stops, and the engine drops that
+// form while it keeps `rgba()` with commas, so this writes those colors with commas. Tailwind
+// also writes a rule of `--tw-` defaults for `::backdrop`, a selector the engine drops whole,
+// which this takes out. It rewrites each declaration as PostCSS walks Tailwind's output, and
+// autoprefixer runs once after that walk, so autoprefixer's `-webkit-` copies carry the
+// rewritten colors (Dual Input, record/areas/architecture/log.md, "2026-10-25: Coherent GT
+// keeps 304 of the 554 CSS properties Chromium 152 keeps, and lays out flexbox and grid as
+// Chromium does but for `gap`, `justify-content: end`, and subgrid").
 
 import type { Plugin } from "postcss"
 import valueParser from "postcss-value-parser"
@@ -24,7 +25,13 @@ export function output(): Plugin {
   }
 }
 
-/** A value with each `rgb(1 2 3 / 0.5)` written as `rgba(1, 2, 3, 0.5)`, and each `hsl()` likewise. */
+/**
+ * A value with each `rgb(1 2 3 / 0.5)` written as `rgba(1, 2, 3, 0.5)`, and each `hsl()`
+ * likewise. Only a color of three channels, none of them `none`, changes:
+ * `rgb(var(--primary) / 0.5)`, Tailwind's own pattern for a theme color, breaks with commas
+ * too when the variable holds `116 212 255`, so it stays as it is, for the Coherent GT check
+ * to name.
+ */
 export function withCommas(value: string): string {
   const parsed = valueParser(value)
   parsed.walk((node) => {
@@ -38,6 +45,7 @@ export function withCommas(value: string): string {
       else if (alpha === "") alpha = valueParser.stringify(n)
       else channels.push(valueParser.stringify(n))
     }
+    if (channels.length !== 3 || channels.some((c) => /^none$/i.test(c))) return
     // An alpha as a percent is a form the engine drops too, so it becomes a number.
     if (alpha?.endsWith("%")) alpha = String(parseFloat(alpha) / 100)
     const name = node.value.toLowerCase().replace(/a$/, "")
