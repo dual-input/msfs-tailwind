@@ -1,0 +1,13 @@
+// What npm's `prepare` runs when it installs this package from GitHub: src/ compiled into
+// dist/, with each `.ts` import rewritten to `.js` and the types beside it.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "rewriteRelativeImportExtensions": true,
+    "declaration": true,
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": ["src"]
+}

@@ -1,0 +1,38 @@
+{
+  "name": "msfs-tailwind",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tailwind 3 for MSFS 2024's Coherent GT, as Dual Input's probes measured it",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "prepare": "tsc -p tsconfig.build.json",
+    "test": "tsc -p . && node --test test/*.test.ts"
+  },
+  "dependencies": {
+    "autoprefixer": "10.6.1",
+    "postcss-value-parser": "4.2.0",
+    "tailwindcss": "3.4.19"
+  },
+  "peerDependencies": {
+    "postcss": "^8.4.47"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "coherent-checks": "github:dual-input/coherent-checks",
+    "postcss": "8.5.31",
+    "typescript": "7.0.2"
+  }
+}
